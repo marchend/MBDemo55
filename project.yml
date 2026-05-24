@@ -3,20 +3,59 @@ options:
   bundleIdPrefix: com.acmebank
   deploymentTarget:
     iOS: "17.0"
+packages:
+  OktaMobileSwift:
+    url: https://github.com/okta/okta-mobile-swift
+    minVersion: "2.0.0"
 targets:
   AcmeBank:
     type: application
     platform: iOS
     sources: [AcmeBank]
+    dependencies:
+      - package: OktaMobileSwift
+        product: WebAuthenticationUI
+    info:
+      path: AcmeBank/Info.plist
+      properties:
+        CFBundleDisplayName: AcmeBank
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        # Okta OIDC config — seeded empty; populated at build time by the
+        # "Inject Okta config into Info.plist" preBuildScript from env vars.
+        OktaIssuer: ""
+        OktaClientID: ""
+        OktaRedirectURI: ""
+        OktaScopes: ""
+    preBuildScripts:
+      - name: "Inject Okta config into Info.plist"
+        script: |
+          set -euo pipefail
+
+          INFO_PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+
+          if [ ! -f "${INFO_PLIST}" ]; then
+            echo "error: Info.plist not found at ${INFO_PLIST}"
+            exit 1
+          fi
+
+          : "${OKTA_ISSUER:?error: OKTA_ISSUER env var is not set. See README \"Okta build configuration\".}"
+          : "${OKTA_CLIENT_ID:?error: OKTA_CLIENT_ID env var is not set. See README \"Okta build configuration\".}"
+          : "${OKTA_REDIRECT_URI:?error: OKTA_REDIRECT_URI env var is not set. See README \"Okta build configuration\".}"
+          : "${OKTA_SCOPES:?error: OKTA_SCOPES env var is not set. See README \"Okta build configuration\".}"
+
+          /usr/libexec/PlistBuddy -c "Set :OktaIssuer ${OKTA_ISSUER}" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaClientID ${OKTA_CLIENT_ID}" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaRedirectURI ${OKTA_REDIRECT_URI}" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaScopes ${OKTA_SCOPES}" "${INFO_PLIST}"
+
+          echo "Injected Okta config into ${INFO_PLIST}"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.acmebank.mobile
         SWIFT_VERSION: "5.10"
         IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_CFBundleDisplayName: AcmeBank
   AcmeBankTests:
     type: bundle.unit-test
     platform: iOS
@@ -26,6 +65,7 @@ targets:
     settings:
       base:
         SWIFT_VERSION: "5.10"
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   AcmeBank:
     build:
