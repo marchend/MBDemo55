@@ -14,10 +14,15 @@ import XCTest
 ///
 /// If a future refactor of `project.yml` accidentally removes the seed
 /// entries, the build product's Info.plist would silently lose the keys
-/// and `Bundle.main.object(forInfoDictionaryKey:)` would return `nil` at
-/// runtime — `AuthService` configuration would then fail with a confusing
-/// "missing key" error far from the cause. This test catches that
-/// regression at the unit-test layer.
+/// and `Bundle(identifier:).object(forInfoDictionaryKey:)` would return
+/// `nil` at runtime — `AuthService` configuration would then fail with a
+/// confusing "missing key" error far from the cause. This test catches
+/// that regression at the unit-test layer.
+///
+/// NOTE on bundle resolution: under XCTest, `Bundle.main` is the `xctest`
+/// runner process, *not* the AcmeBank host app. The Okta seed keys live
+/// in the app target's Info.plist, so we resolve the app bundle by its
+/// bundle identifier and fall back to `.main` only as a safety net.
 final class OktaPlistSeedTests: XCTestCase {
 
     private static let requiredKeys = [
@@ -27,8 +32,19 @@ final class OktaPlistSeedTests: XCTestCase {
         "OktaScopes",
     ]
 
+    /// The AcmeBank host-app bundle (not the test runner). Resolved via
+    /// the app's bundle identifier so the assertion runs against the
+    /// Info.plist that actually ships in the app product.
+    private var appBundle: Bundle {
+        Bundle(identifier: "com.acmebank.mobile") ?? .main
+    }
+
+    private var appInfo: [String: Any] {
+        appBundle.infoDictionary ?? [:]
+    }
+
     func test_infoPlist_containsAllOktaSeedKeys() {
-        let info = Bundle.main.infoDictionary ?? [:]
+        let info = appInfo
         for key in Self.requiredKeys {
             XCTAssertNotNil(
                 info[key],
@@ -40,7 +56,7 @@ final class OktaPlistSeedTests: XCTestCase {
     }
 
     func test_infoPlist_oktaSeedKeysAreStrings() {
-        let info = Bundle.main.infoDictionary ?? [:]
+        let info = appInfo
         for key in Self.requiredKeys {
             // Allow empty string (seed default) or any populated string;
             // anything non-String means the seed type drifted.

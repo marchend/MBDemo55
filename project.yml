@@ -23,12 +23,17 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         # Okta OIDC config — seeded empty; populated at build time by the
-        # "Inject Okta config into Info.plist" preBuildScript from env vars.
+        # "Inject Okta config into Info.plist" postCompileScript from env vars.
         OktaIssuer: ""
         OktaClientID: ""
         OktaRedirectURI: ""
         OktaScopes: ""
-    preBuildScripts:
+    # Use `postCompileScripts` (not `preBuildScripts`) so the script runs AFTER
+    # Xcode's "Process Info.plist" build phase has copied the plist into
+    # ${TARGET_BUILD_DIR}/${INFOPLIST_PATH}. preBuildScripts run before any of
+    # Xcode's own phases, so the file would not yet exist and the guard below
+    # would `exit 1` on every build.
+    postCompileScripts:
       - name: "Inject Okta config into Info.plist"
         script: |
           set -euo pipefail
@@ -45,10 +50,14 @@ targets:
           : "${OKTA_REDIRECT_URI:?error: OKTA_REDIRECT_URI env var is not set. See README \"Okta build configuration\".}"
           : "${OKTA_SCOPES:?error: OKTA_SCOPES env var is not set. See README \"Okta build configuration\".}"
 
-          /usr/libexec/PlistBuddy -c "Set :OktaIssuer ${OKTA_ISSUER}" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaClientID ${OKTA_CLIENT_ID}" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaRedirectURI ${OKTA_REDIRECT_URI}" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaScopes ${OKTA_SCOPES}" "${INFO_PLIST}"
+          # Single-quote the expanded value inside the PlistBuddy -c string so
+          # values containing whitespace (notably OKTA_SCOPES = "openid profile
+          # offline_access") are passed as a single argument rather than being
+          # word-split by the shell.
+          /usr/libexec/PlistBuddy -c "Set :OktaIssuer '${OKTA_ISSUER}'" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaClientID '${OKTA_CLIENT_ID}'" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaRedirectURI '${OKTA_REDIRECT_URI}'" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaScopes '${OKTA_SCOPES}'" "${INFO_PLIST}"
 
           echo "Injected Okta config into ${INFO_PLIST}"
     settings:
