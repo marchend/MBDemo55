@@ -13,7 +13,7 @@ architecture with a `URLSession`-based networking layer.
 | Language | Swift 5.10 |
 | UI Framework | SwiftUI |
 | Architecture | MVVM + Coordinator (`NavigationStack`) |
-| Auth | Okta OIDC (`okta-mobile-swift` 2.x) |
+| Auth | Okta OIDC (`okta-mobile-swift` 2.x, `WebAuthenticationUI`) |
 | Networking | `URLSession` + async/await |
 | Dependency Injection | Constructor injection (no service locator) |
 | Notifications | `NotificationCenter` (typed wrappers) |
@@ -32,6 +32,13 @@ Manual fallback:
 ```bash
 brew install xcodegen && xcodegen generate && open AcmeBank.xcodeproj
 ```
+
+### Build prerequisites — Okta env vars
+The app build phase injects Okta OIDC config into `Info.plist` from four
+environment variables (`OKTA_ISSUER`, `OKTA_CLIENT_ID`, `OKTA_REDIRECT_URI`,
+`OKTA_SCOPES`). The build **fails** if any is unset — no secrets file is
+committed. See `README.md` § "Okta build configuration" for the two
+supported setup paths (`launchctl setenv` vs `~/.zshrc` + `xed .`).
 
 ## Running Tests
 - **Xcode:** `Cmd+U` on the `AcmeBank` scheme.
@@ -70,7 +77,11 @@ AppCoordinator
 ```
 
 ### Authentication *(deferred — future PR)*
-Okta OIDC via `okta-mobile-swift` 2.x. `AuthService` persists tokens in Keychain.
+Okta OIDC via `okta-mobile-swift` 2.x (SPM, product `WebAuthenticationUI`).
+Config is read from `Info.plist` keys `OktaIssuer`, `OktaClientID`,
+`OktaRedirectURI`, `OktaScopes` — seeded empty in `project.yml`, injected
+at build time from env vars by the "Inject Okta config into Info.plist"
+preBuildScript. `AuthService` persists tokens in Keychain.
 `RequestInterceptor` refreshes tokens before each request; on failure posts
 `AppNotification.sessionExpired` → `AppCoordinator` redirects to Login.
 
@@ -92,6 +103,7 @@ Coordinators subscribe; ViewModels never subscribe.
 | XcodeGen `project.yml` + SwiftUI Hello World | ✅ implemented in this PR |
 | `setup.sh`, `.gitignore` | ✅ implemented in this PR |
 | One trivial XCTest | ✅ implemented in this PR |
+| Okta SPM dep + Info.plist build-time config | ✅ implemented (MD055-2 PR 1) |
 | MVVM + Coordinator (all coordinators) | ⏳ deferred — future PR |
 | Auth (Okta OIDC, AuthService, KeychainStore) | ⏳ deferred — future PR |
 | Networking (APIClient, APIRouter, RequestInterceptor) | ⏳ deferred — future PR |

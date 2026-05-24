@@ -3,20 +3,39 @@ options:
   bundleIdPrefix: com.acmebank
   deploymentTarget:
     iOS: "17.0"
+packages:
+  OktaMobileSwift:
+    url: https://github.com/okta/okta-mobile-swift
+    minVersion: "2.0.0"
 targets:
   AcmeBank:
     type: application
     platform: iOS
     sources: [AcmeBank]
+    dependencies:
+      - package: OktaMobileSwift
+        product: WebAuthenticationUI
+    info:
+      path: AcmeBank/Info.plist
+      properties:
+        CFBundleDisplayName: AcmeBank
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        # Okta OIDC config — seeded empty in the generated Info.plist.
+        # Real values are wired in via a separate release-build mechanism
+        # (see README "Okta build configuration"); leaving these as empty
+        # strings keeps CI / unit-test builds self-contained — no secrets,
+        # no build-phase script, no nondeterministic injection.
+        OktaIssuer: ""
+        OktaClientID: ""
+        OktaRedirectURI: ""
+        OktaScopes: ""
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.acmebank.mobile
         SWIFT_VERSION: "5.10"
         IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_CFBundleDisplayName: AcmeBank
   AcmeBankTests:
     type: bundle.unit-test
     platform: iOS
@@ -26,6 +45,7 @@ targets:
     settings:
       base:
         SWIFT_VERSION: "5.10"
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   AcmeBank:
     build:
