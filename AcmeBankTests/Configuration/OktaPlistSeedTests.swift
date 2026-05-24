@@ -27,8 +27,16 @@ final class OktaPlistSeedTests: XCTestCase {
         "OktaScopes",
     ]
 
+    /// Under XCTest, `Bundle.main` is the `xctest` runner bundle — NOT the
+    /// AcmeBank app bundle that actually contains the seeded Okta keys.
+    /// Resolve the host-app bundle by its known identifier so assertions
+    /// target the right Info.plist.
+    private var hostAppBundle: Bundle {
+        Bundle(identifier: "com.acmebank.mobile") ?? .main
+    }
+
     func test_infoPlist_containsAllOktaSeedKeys() {
-        let info = Bundle.main.infoDictionary ?? [:]
+        let info = hostAppBundle.infoDictionary ?? [:]
         for key in Self.requiredKeys {
             XCTAssertNotNil(
                 info[key],
@@ -40,7 +48,7 @@ final class OktaPlistSeedTests: XCTestCase {
     }
 
     func test_infoPlist_oktaSeedKeysAreStrings() {
-        let info = Bundle.main.infoDictionary ?? [:]
+        let info = hostAppBundle.infoDictionary ?? [:]
         for key in Self.requiredKeys {
             // Allow empty string (seed default) or any populated string;
             // anything non-String means the seed type drifted.

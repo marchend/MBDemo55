@@ -23,12 +23,12 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         # Okta OIDC config — seeded empty; populated at build time by the
-        # "Inject Okta config into Info.plist" preBuildScript from env vars.
+        # "Inject Okta config into Info.plist" postCompileScript from env vars.
         OktaIssuer: ""
         OktaClientID: ""
         OktaRedirectURI: ""
         OktaScopes: ""
-    preBuildScripts:
+    postCompileScripts:
       - name: "Inject Okta config into Info.plist"
         script: |
           set -euo pipefail
@@ -40,15 +40,20 @@ targets:
             exit 1
           fi
 
-          : "${OKTA_ISSUER:?error: OKTA_ISSUER env var is not set. See README \"Okta build configuration\".}"
-          : "${OKTA_CLIENT_ID:?error: OKTA_CLIENT_ID env var is not set. See README \"Okta build configuration\".}"
-          : "${OKTA_REDIRECT_URI:?error: OKTA_REDIRECT_URI env var is not set. See README \"Okta build configuration\".}"
-          : "${OKTA_SCOPES:?error: OKTA_SCOPES env var is not set. See README \"Okta build configuration\".}"
+          # If any OKTA_* env var is unset, skip injection and keep the
+          # seeded empty strings. This lets CI / unit-test builds succeed
+          # without secrets; local / release builds that need real values
+          # should export all four vars (see README "Okta build configuration").
+          if [ -z "${OKTA_ISSUER:-}" ] || [ -z "${OKTA_CLIENT_ID:-}" ] || \
+             [ -z "${OKTA_REDIRECT_URI:-}" ] || [ -z "${OKTA_SCOPES:-}" ]; then
+            echo "warning: One or more OKTA_* env vars are unset; skipping Okta Info.plist injection. Seeded empty strings will remain."
+            exit 0
+          fi
 
-          /usr/libexec/PlistBuddy -c "Set :OktaIssuer ${OKTA_ISSUER}" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaClientID ${OKTA_CLIENT_ID}" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaRedirectURI ${OKTA_REDIRECT_URI}" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaScopes ${OKTA_SCOPES}" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaIssuer '${OKTA_ISSUER}'" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaClientID '${OKTA_CLIENT_ID}'" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaRedirectURI '${OKTA_REDIRECT_URI}'" "${INFO_PLIST}"
+          /usr/libexec/PlistBuddy -c "Set :OktaScopes '${OKTA_SCOPES}'" "${INFO_PLIST}"
 
           echo "Injected Okta config into ${INFO_PLIST}"
     settings:
