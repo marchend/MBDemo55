@@ -50,9 +50,11 @@ struct LoginView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 72, height: 72)
-                .foregroundStyle(.blue)
-                .accessibilityLabel("AcmeBank logo")
-                .accessibilityHidden(true) // decorative — bank name label follows
+                // Dark navy per AC spec (#1B2A4A)
+                .foregroundStyle(Color(red: 27/255, green: 42/255, blue: 74/255))
+                // Decorative — the "AcmeBank" Text label that follows is the
+                // accessible representation; no accessibilityLabel needed here.
+                .accessibilityHidden(true)
 
             Text("AcmeBank")
                 .font(.title)
@@ -115,18 +117,19 @@ struct LoginView: View {
     }
 
     private var signInButton: some View {
-        Button {
+        let isDisabled = !viewModel.isSignInEnabled || viewModel.isLoading
+        return Button {
             Task { await viewModel.performSignIn() }
         } label: {
             Text("Sign in")
                 .fontWeight(.semibold)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(viewModel.isLoading ? Color.blue.opacity(0.6) : Color.blue)
+                .background(isDisabled ? Color.blue.opacity(0.6) : Color.blue)
                 .foregroundStyle(.white)
                 .cornerRadius(10)
         }
-        .disabled(viewModel.isLoading)
+        .disabled(isDisabled)
         .accessibilityLabel("Sign in")
         .accessibilityHint("Double-tap to sign in to AcmeBank")
         .accessibilityIdentifier("signInButton")

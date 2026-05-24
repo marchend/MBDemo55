@@ -14,6 +14,16 @@ final class LoginViewModel: ObservableObject {
     @Published var isPasswordVisible: Bool = false
     @Published var isLoading: Bool = false
 
+    // MARK: - Derived state
+
+    /// `true` when both the username and password fields contain non-empty text,
+    /// matching the AC requirement that the Sign-in button is disabled until
+    /// both fields are filled in.
+    var isSignInEnabled: Bool {
+        !username.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !password.isEmpty
+    }
+
     // MARK: - Injectable dependencies
 
     /// Called by `performSignIn()`. Defaults to a no-op stub; the composition

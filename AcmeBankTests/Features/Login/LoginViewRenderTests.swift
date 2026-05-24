@@ -2,7 +2,7 @@ import XCTest
 import SwiftUI
 @testable import AcmeBank
 
-/// Snapshot / render tests for `LoginView`.
+/// Render tests for `LoginView`.
 ///
 /// Because the project does not yet include a third-party snapshot framework
 /// (e.g. SnapshotTesting), these tests use `XCTAttachment`-based captures:
@@ -10,10 +10,12 @@ import SwiftUI
 /// `UIImage`, and attach the result to the test run so it appears in Xcode's
 /// test reporter for visual inspection.
 ///
-/// On a first run the attachments act as the baseline. In CI the attachments
-/// are uploaded as artefacts. A future PR can swap in a proper diff-based
-/// snapshot library once the design system is finalised.
-final class LoginViewSnapshotTests: XCTestCase {
+/// These tests verify that the view **renders without crashing** across
+/// representative states and device sizes.  They are intentionally named
+/// "RenderTests" (not "SnapshotTests") because there is no baseline image or
+/// pixel-diff assertion — that will be added in the PR that introduces a
+/// proper snapshot framework once the design system is finalised.
+final class LoginViewRenderTests: XCTestCase {
 
     // MARK: - Helpers
 

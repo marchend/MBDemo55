@@ -4,7 +4,7 @@ import SwiftUI
 struct AcmeBankApp: App {
     var body: some Scene {
         WindowGroup {
-            LoginView(viewModel: LoginViewModel())
+            ContentView()   // ContentView owns the LoginViewModel and routes auth state
         }
     }
 }

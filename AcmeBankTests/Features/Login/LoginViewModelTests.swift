@@ -36,6 +36,44 @@ final class LoginViewModelTests: XCTestCase {
         XCTAssertFalse(sut.isLoading)
     }
 
+    // MARK: - isSignInEnabled
+
+    func test_isSignInEnabled_falseWhenBothFieldsEmpty() {
+        let sut = LoginViewModel()
+        XCTAssertFalse(sut.isSignInEnabled,
+                       "Should be disabled when username and password are both empty")
+    }
+
+    func test_isSignInEnabled_falseWhenUsernameEmpty() {
+        let sut = LoginViewModel()
+        sut.password = "s3cr3t!"
+        XCTAssertFalse(sut.isSignInEnabled,
+                       "Should be disabled when username is empty")
+    }
+
+    func test_isSignInEnabled_falseWhenPasswordEmpty() {
+        let sut = LoginViewModel()
+        sut.username = "user@acmebank.com"
+        XCTAssertFalse(sut.isSignInEnabled,
+                       "Should be disabled when password is empty")
+    }
+
+    func test_isSignInEnabled_falseWhenUsernameIsOnlyWhitespace() {
+        let sut = LoginViewModel()
+        sut.username = "   "
+        sut.password = "s3cr3t!"
+        XCTAssertFalse(sut.isSignInEnabled,
+                       "Should be disabled when username is whitespace-only")
+    }
+
+    func test_isSignInEnabled_trueWhenBothFieldsNonEmpty() {
+        let sut = LoginViewModel()
+        sut.username = "user@acmebank.com"
+        sut.password = "s3cr3t!"
+        XCTAssertTrue(sut.isSignInEnabled,
+                      "Should be enabled when both username and password are non-empty")
+    }
+
     // MARK: - performSignIn — loading state
 
     func test_performSignIn_setsIsLoadingTrueDuringExecution() async {
