@@ -22,40 +22,15 @@ targets:
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
-        # Okta OIDC config — seeded empty; populated at build time by the
-        # "Inject Okta config into Info.plist" postCompileScript from env vars.
+        # Okta OIDC config — seeded empty in the generated Info.plist.
+        # Real values are wired in via a separate release-build mechanism
+        # (see README "Okta build configuration"); leaving these as empty
+        # strings keeps CI / unit-test builds self-contained — no secrets,
+        # no build-phase script, no nondeterministic injection.
         OktaIssuer: ""
         OktaClientID: ""
         OktaRedirectURI: ""
         OktaScopes: ""
-    postCompileScripts:
-      - name: "Inject Okta config into Info.plist"
-        script: |
-          set -euo pipefail
-
-          INFO_PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
-
-          if [ ! -f "${INFO_PLIST}" ]; then
-            echo "error: Info.plist not found at ${INFO_PLIST}"
-            exit 1
-          fi
-
-          # If any OKTA_* env var is unset, skip injection and keep the
-          # seeded empty strings. This lets CI / unit-test builds succeed
-          # without secrets; local / release builds that need real values
-          # should export all four vars (see README "Okta build configuration").
-          if [ -z "${OKTA_ISSUER:-}" ] || [ -z "${OKTA_CLIENT_ID:-}" ] || \
-             [ -z "${OKTA_REDIRECT_URI:-}" ] || [ -z "${OKTA_SCOPES:-}" ]; then
-            echo "warning: One or more OKTA_* env vars are unset; skipping Okta Info.plist injection. Seeded empty strings will remain."
-            exit 0
-          fi
-
-          /usr/libexec/PlistBuddy -c "Set :OktaIssuer '${OKTA_ISSUER}'" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaClientID '${OKTA_CLIENT_ID}'" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaRedirectURI '${OKTA_REDIRECT_URI}'" "${INFO_PLIST}"
-          /usr/libexec/PlistBuddy -c "Set :OktaScopes '${OKTA_SCOPES}'" "${INFO_PLIST}"
-
-          echo "Injected Okta config into ${INFO_PLIST}"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.acmebank.mobile

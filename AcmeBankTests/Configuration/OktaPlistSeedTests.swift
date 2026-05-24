@@ -3,14 +3,15 @@ import XCTest
 
 /// Guards the four Okta Info.plist seed keys declared in `project.yml`.
 ///
-/// The keys are seeded as empty strings in `targets.AcmeBank.info.properties`
-/// and populated at build time by the "Inject Okta config into Info.plist"
-/// Run Script from environment variables. This test only asserts the keys
-/// *exist* in the host-app bundle — it deliberately does NOT assert on
-/// their values, because:
+/// The keys are seeded as empty strings in `targets.AcmeBank.info.properties`.
+/// Real values are wired in for release builds via a separate mechanism
+/// (see README "Okta build configuration"); CI / test-only builds keep
+/// the seeded empty strings, which is sufficient for `AuthService` to
+/// read the keys without crashing on a missing-key lookup.
 ///
-///   • Local builds inject real values from `OKTA_*` env vars.
-///   • CI / test-only builds may leave them as the seeded empty string.
+/// This test only asserts the keys *exist* in the host-app bundle — it
+/// deliberately does NOT assert on their values, because empty strings
+/// are a valid CI-build state.
 ///
 /// If a future refactor of `project.yml` accidentally removes the seed
 /// entries, the build product's Info.plist would silently lose the keys
